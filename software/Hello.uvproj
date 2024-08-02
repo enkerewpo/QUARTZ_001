@@ -324,7 +324,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath></IncludePath>
+              <IncludePath>D:\Keil_v5\C51\INC\STC</IncludePath>
             </VariousControls>
           </C51>
           <Ax51>

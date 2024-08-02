@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.uidesc": "xml",
+        "*.uproject": "json",
+        "*.sy": "c",
+        "*.dot": "dot",
+        "*.s": "arm64",
+        "*.meow": "ini",
+        "*.S": "loongarch",
+        "HELLO.C": "cpp"
+    }
+}
