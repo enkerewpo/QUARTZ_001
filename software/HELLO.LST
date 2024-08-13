@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 11:48:06 PAGE 1   
+C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 18:51:47 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE HELLO
@@ -14,94 +14,120 @@ line level    source
    4          typedef unsigned char BYTE;
    5          typedef unsigned int WORD;
    6          
-   7          sbit bit9 = P1 ^ 1;
-   8          bit busy;
-   9          
-  10          void wait(unsigned int i);
-  11          
-  12          void Uart1_Init(void) // 2400bps@12.000MHz
-  13          {
-  14   1        PCON |= 0x80;
-  15   1        SCON = 0x50;
-  16   1        AUXR &= 0xBF;
-  17   1        AUXR &= 0xFE;
-  18   1        TMOD &= 0x0F;
-  19   1        TMOD |= 0x20;
-  20   1        TL1 = 0xE6;
-  21   1        TH1 = 0xE6;
-  22   1        TR1 = 1;
-  23   1        ES = 1;
-  24   1        EA = 1;
-  25   1      }
-  26          
-  27          void Uart_Isr() interrupt 4 using 1 {
-  28   1        if (RI) {
-  29   2          RI = 0;
-  30   2          // Clear receive interrupt flag
-  31   2          P0 = SBUF;
-  32   2          // P0 show UART data
-  33   2          bit9 = SBUF;
-  34   2        }
-  35   1        if (TI) {
-  36   2          TI = 0;
-  37   2          // Clear transmit interrupt flag
-  38   2          busy = 0;
-  39   2          // Clear transmit busy flag
-  40   2        }
-  41   1      }
-  42          
-  43          void send_char(char c) {
-  44   1        while (busy)
-  45   1          ;
-  46   1        // Wait for the last transmission to complete
-  47   1        busy = 1;
-  48   1        // Set the busy flag
-  49   1        SBUF = c;
-  50   1        // Send data to UART buffer
-  51   1      }
-  52          
-  53          void send_str(char *s) {
-  54   1        while (*s) {
-C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 11:48:06 PAGE 2   
+   7          // global buffer for RXD input
+   8          BYTE buffer[32];
+   9          BYTE buffer_index = 0;
+  10          
+  11          sbit bit0 = P1 ^ 0;
+  12          sbit bit1 = P1 ^ 1;
+  13          bit busy;
+  14          
+  15          void wait(unsigned int i);
+  16          
+  17          void Uart1_Init(void) // 2400bps@12.000MHz
+  18          {
+  19   1        PCON |= 0x80;
+  20   1        SCON = 0x50;
+  21   1        AUXR &= 0xBF;
+  22   1        AUXR &= 0xFE;
+  23   1        TMOD &= 0x0F;
+  24   1        TMOD |= 0x20;
+  25   1        TL1 = 0xE6;
+  26   1        TH1 = 0xE6;
+  27   1        TR1 = 1;
+  28   1        ES = 1;
+  29   1        EA = 1;
+  30   1        // enable RXD to receive data
+  31   1        SCON |= 0x10;
+  32   1      }
+  33          
+  34          void Uart_Isr() interrupt 4 using 1 {
+  35   1        if (RI) {
+  36   2          RI = 0;
+  37   2          buffer[buffer_index++] = SBUF;
+  38   2          bit0 = RI;
+  39   2        }
+  40   1        if (TI) {
+  41   2          TI = 0;
+  42   2          busy = 0;
+  43   2          bit1 = TI;
+  44   2        }
+  45   1      }
+  46          
+  47          void send_char(char c) {
+  48   1        while (busy)
+  49   1          ;
+  50   1        // Wait for the last transmission to complete
+  51   1        busy = 1;
+  52   1        // Set the busy flag
+  53   1        SBUF = c;
+  54   1        // Send data to UART buffer
+C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 18:51:47 PAGE 2   
 
-  55   2          send_char(*s++);
-  56   2        }
-  57   1      }
-  58          
-  59          void main() {
-  60   1      
-  61   1        Uart1_Init();
-  62   1      
-  63   1        while (1) {
-  64   2          send_str("Hello, world from wheatfox!\r\n");
-  65   2          wait(1000);
-  66   2        }
+  55   1      }
+  56          
+  57          void send_str(char *s) {
+  58   1        while (*s) {
+  59   2          send_char(*s++);
+  60   2        }
+  61   1      }
+  62          
+  63          BYTE get_char() {
+  64   1        while (buffer_index == 0)
+  65   1          ;
+  66   1        return buffer[--buffer_index];
   67   1      }
   68          
-  69          void wait(unsigned int i) {
-  70   1        unsigned int j;
-  71   1        for (j = 0; j < i; j++) {
-  72   2          _nop_();
-  73   2          _nop_();
-  74   2          _nop_();
-  75   2          _nop_();
-  76   2          _nop_();
-  77   2          _nop_();
-  78   2          _nop_();
-  79   2          _nop_();
-  80   2        }
-  81   1      }
+  69          BYTE tmp_char;
+  70          
+  71          void main() {
+  72   1      
+  73   1        Uart1_Init();
+  74   1      
+  75   1        send_str(
+  76   1            "Welcome to QUARTZ_RT minimal OS for STC89 series microcontrollers\n\r");
+  77   1        send_str("Author: wheatfox(enkerewpo@hotmail.com)");
+  78   1        // enter shell
+  79   1        while (1) {
+  80   2          send_str("\n\r>");
+  81   2          // read the full line until '\n'
+  82   2          while (1) {
+  83   3            tmp_char = get_char();
+  84   3            if (tmp_char == '\n') {
+  85   4              send_str("found newline\n\r");
+  86   4              break;
+  87   4            }
+  88   3            send_char(tmp_char);
+  89   3          }
+  90   2        }
+  91   1      }
+  92          
+  93          void wait(unsigned int i) {
+  94   1        unsigned int j;
+  95   1        for (j = 0; j < i; j++) {
+  96   2          _nop_();
+  97   2          _nop_();
+  98   2          _nop_();
+  99   2          _nop_();
+ 100   2          _nop_();
+ 101   2          _nop_();
+ 102   2          _nop_();
+ 103   2          _nop_();
+ 104   2        }
+ 105   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    153    ----
-   CONSTANT SIZE    =     30    ----
+   CODE SIZE        =    218    ----
+   CONSTANT SIZE    =    128    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----       3
+   DATA SIZE        =     34       3
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 18:51:47 PAGE 3   
 
 
 C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
