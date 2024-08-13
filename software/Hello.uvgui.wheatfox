@@ -101,10 +101,10 @@
         <yPos>-1</yPos>
       </MaxPosition>
       <NormalPosition>
-        <Top>208</Top>
-        <Left>208</Left>
-        <Right>1648</Right>
-        <Bottom>961</Bottom>
+        <Top>-4</Top>
+        <Left>-8</Left>
+        <Right>1432</Right>
+        <Bottom>749</Bottom>
       </NormalPosition>
     </WindowPosition>
     <MDIClientArea>
@@ -3606,9 +3606,9 @@
       <ActiveTab>0</ActiveTab>
       <Doc>
         <Name>.\HELLO.C</Name>
-        <ColumnNumber>13</ColumnNumber>
-        <TopLine>42</TopLine>
-        <CurrentLine>71</CurrentLine>
+        <ColumnNumber>11</ColumnNumber>
+        <TopLine>22</TopLine>
+        <CurrentLine>40</CurrentLine>
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>
         <PaneID>0</PaneID>
