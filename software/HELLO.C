@@ -1,40 +1,81 @@
 #include "STC89C5xRC.H"
-#include <stdio.h>
+#include "intrins.h"
 
-void Uart1_Init(void)	//9600bps@12.010MHz
+typedef unsigned char BYTE;
+typedef unsigned int WORD;
+
+sbit bit9 = P1 ^ 1;
+bit busy;
+
+void wait(unsigned int i);
+
+void Uart1_Init(void) // 2400bps@12.000MHz
 {
-	PCON |= 0x80;		//Enable SMOD bit
-	SCON = 0x50;		//8 bits and variable baudrate
-	AUXR |= 0x40;		//imer clock is 1T mode
-	AUXR &= 0xFE;		//UART 1 use Timer1 as baudrate generator
-	TMOD &= 0x0F;		//Set timer work mode
-	TMOD |= 0x20;		//Set timer work mode
-	TL1 = 0xB2;			//Initial timer value
-	TH1 = 0xB2;			//Set reload value
-	ET1 = 0;			//Disable Timer%d interrupt
-	TR1 = 1;			//Timer1 start run
+  PCON |= 0x80;
+  SCON = 0x50;
+  AUXR &= 0xBF;
+  AUXR &= 0xFE;
+  TMOD &= 0x0F;
+  TMOD |= 0x20;
+  TL1 = 0xE6;
+  TH1 = 0xE6;
+  TR1 = 1;
+  ES = 1;
+  EA = 1;
 }
 
+void Uart_Isr() interrupt 4 using 1 {
+  if (RI) {
+    RI = 0;
+    // Clear receive interrupt flag
+    P0 = SBUF;
+    // P0 show UART data
+    bit9 = SBUF;
+  }
+  if (TI) {
+    TI = 0;
+    // Clear transmit interrupt flag
+    busy = 0;
+    // Clear transmit busy flag
+  }
+}
 
-void _putchar(unsigned char m) { SBUF = m; }
+void send_char(char c) {
+  while (busy)
+    ;
+  // Wait for the last transmission to complete
+  busy = 1;
+  // Set the busy flag
+  SBUF = c;
+  // Send data to UART buffer
+}
 
-void delay() {
-  unsigned char i, j, k;
-  i = 8;
-  j = 1;
-  k = 243;
-  do {
-    do {
-      while (--k)
-        ;
-    } while (--j);
-  } while (--i);
+void send_str(char *s) {
+  while (*s) {
+    send_char(*s++);
+  }
 }
 
 void main() {
+
   Uart1_Init();
+
   while (1) {
-    _putchar('p');
-    delay();
+    send_str("Hello, world from wheatfox!\r\n");
+    wait(1000);
+  }
+}
+
+void wait(unsigned int i) {
+  unsigned int j;
+  for (j = 0; j < i; j++) {
+    _nop_();
+    _nop_();
+    _nop_();
+    _nop_();
+    _nop_();
+    _nop_();
+    _nop_();
+    _nop_();
   }
 }

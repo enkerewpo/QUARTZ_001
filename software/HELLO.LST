@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   HELLO                                                             08/03/2024 00:50:39 PAGE 1   
+C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 11:48:06 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE HELLO
@@ -9,55 +9,98 @@ COMPILER INVOKED BY: D:\Keil_v5\C51\BIN\C51.EXE HELLO.C OPTIMIZE(8,SPEED) BROWSE
 line level    source
 
    1          #include "STC89C5xRC.H"
-   2          #include <stdio.h>
+   2          #include "intrins.h"
    3          
-   4          void Uart1_Init(void) //9600bps@12.010MHz
-   5          {
-   6   1        PCON |= 0x80;   //Enable SMOD bit
-   7   1        SCON = 0x50;    //8 bits and variable baudrate
-   8   1        AUXR |= 0x40;   //imer clock is 1T mode
-   9   1        AUXR &= 0xFE;   //UART 1 use Timer1 as baudrate generator
-  10   1        TMOD &= 0x0F;   //Set timer work mode
-  11   1        TMOD |= 0x20;   //Set timer work mode
-  12   1        TL1 = 0xB2;     //Initial timer value
-  13   1        TH1 = 0xB2;     //Set reload value
-  14   1        ET1 = 0;      //Disable Timer%d interrupt
-  15   1        TR1 = 1;      //Timer1 start run
-  16   1      }
-  17          
-  18          
-  19          void _putchar(unsigned char m) { SBUF = m; }
-  20          
-  21          void delay() {
-  22   1        unsigned char i, j, k;
-  23   1        i = 8;
-  24   1        j = 1;
-  25   1        k = 243;
-  26   1        do {
-  27   2          do {
-  28   3            while (--k)
-  29   3              ;
-  30   3          } while (--j);
-  31   2        } while (--i);
-  32   1      }
-  33          
-  34          void main() {
-  35   1        Uart1_Init();
-  36   1        while (1) {
-  37   2          _putchar('p');
-  38   2          delay();
-  39   2        }
-  40   1      }
+   4          typedef unsigned char BYTE;
+   5          typedef unsigned int WORD;
+   6          
+   7          sbit bit9 = P1 ^ 1;
+   8          bit busy;
+   9          
+  10          void wait(unsigned int i);
+  11          
+  12          void Uart1_Init(void) // 2400bps@12.000MHz
+  13          {
+  14   1        PCON |= 0x80;
+  15   1        SCON = 0x50;
+  16   1        AUXR &= 0xBF;
+  17   1        AUXR &= 0xFE;
+  18   1        TMOD &= 0x0F;
+  19   1        TMOD |= 0x20;
+  20   1        TL1 = 0xE6;
+  21   1        TH1 = 0xE6;
+  22   1        TR1 = 1;
+  23   1        ES = 1;
+  24   1        EA = 1;
+  25   1      }
+  26          
+  27          void Uart_Isr() interrupt 4 using 1 {
+  28   1        if (RI) {
+  29   2          RI = 0;
+  30   2          // Clear receive interrupt flag
+  31   2          P0 = SBUF;
+  32   2          // P0 show UART data
+  33   2          bit9 = SBUF;
+  34   2        }
+  35   1        if (TI) {
+  36   2          TI = 0;
+  37   2          // Clear transmit interrupt flag
+  38   2          busy = 0;
+  39   2          // Clear transmit busy flag
+  40   2        }
+  41   1      }
+  42          
+  43          void send_char(char c) {
+  44   1        while (busy)
+  45   1          ;
+  46   1        // Wait for the last transmission to complete
+  47   1        busy = 1;
+  48   1        // Set the busy flag
+  49   1        SBUF = c;
+  50   1        // Send data to UART buffer
+  51   1      }
+  52          
+  53          void send_str(char *s) {
+  54   1        while (*s) {
+C51 COMPILER V9.60.7.0   HELLO                                                             08/13/2024 11:48:06 PAGE 2   
+
+  55   2          send_char(*s++);
+  56   2        }
+  57   1      }
+  58          
+  59          void main() {
+  60   1      
+  61   1        Uart1_Init();
+  62   1      
+  63   1        while (1) {
+  64   2          send_str("Hello, world from wheatfox!\r\n");
+  65   2          wait(1000);
+  66   2        }
+  67   1      }
+  68          
+  69          void wait(unsigned int i) {
+  70   1        unsigned int j;
+  71   1        for (j = 0; j < i; j++) {
+  72   2          _nop_();
+  73   2          _nop_();
+  74   2          _nop_();
+  75   2          _nop_();
+  76   2          _nop_();
+  77   2          _nop_();
+  78   2          _nop_();
+  79   2          _nop_();
+  80   2        }
+  81   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =     58    ----
-   CONSTANT SIZE    =   ----    ----
+   CODE SIZE        =    153    ----
+   CONSTANT SIZE    =     30    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =   ----    ----
+   DATA SIZE        =   ----       3
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =   ----    ----
+   BIT SIZE         =      1    ----
 END OF MODULE INFORMATION.
 
 
